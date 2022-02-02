@@ -1,0 +1,161 @@
+﻿<!-- Yeah, this code sucks. But I'm not rewriting it 10 years later. Too lazy. -->
+<!DOCTYPE HTML><html><head>
+    <meta http-equiv='refresh'>
+    <meta charset="utf-8">
+    <title>2 orbs</title>
+    <link rel="shortcut icon" href="images/icon.png" type="image/x-icon">
+<style>
+    table { resize:none; }
+    td { text-align: center; min-width: 10px; height: 10px; }
+    /* Thanks http://htmlcolorcodes.com/ for colors */
+    td#td_0 { background-color: #D0C2BF; } /* Concrete 7CE482 */
+    td#td_1 { background-color: #7CE482; } /* Checked and safe floors */
+    td#td_2 { background-color: #FF5757; } /* Floor where the orb died */
+    td#td_3 { background-color: #FFFF0B; } /* Floor found */
+    td#td_7 { background-color: #8282E8; } /* Crack Floor */
+    button { width: 100px; height: 40px; }
+</style><script>
+
+// Some variables, blah-blah
+var ActionStage = 0;
+var nStages = 0;
+var CrackStage = 0;
+var aBuilding;
+var sLOG;
+var nTries = 0; // How much actions does AI magician need
+var nStepLength; // How much to jump in a row
+var nLastPosition = 0; // Where AI magician tested last time
+var nCurrentTry = 0; // Self explanatory, fact off
+var are_Details_Shown = 0;
+var WTF_text = '';
+
+// Do whatever
+function Gimme_Action() {
+    switch (ActionStage) {
+        case 0: // just preparation
+            ActionStage++;
+            nStages = Number(document.getElementById('input_field_nStages').value);
+            CrackStage = Number(document.getElementById('input_field_CrackStage').value);
+            document.getElementById('field_Stages').innerHTML = nStages;
+            document.getElementById('field_CrackStage').innerHTML = CrackStage;
+            aBuilding = [nStages-1];
+            for ( i=0; i<nStages; i++ ) {
+                aBuilding[i] = 0;
+            }
+            aBuilding[CrackStage-1] = 7;
+            sLOG = 'You\'ve created a building ' + nStages + ' stages high. Good job!';
+            sLOG += '<br>Cracking floor is hideously deployed at the stage ' + CrackStage;
+            guess_Tries();
+            nStepLength = nTries;
+            sLOG += '<br><br>AI magician guess he will need no more then <font color="red"><b>' + nTries + '</b></font> tries.<br>';
+            break
+        case 1: // AI searches, both orbs are safe, beware
+            var newPosition = Math.min(nLastPosition + nStepLength, nStages);
+            nStepLength--;
+            if (newPosition<CrackStage) { // Make a step and if orb didn't crack...
+                for ( i=nLastPosition; i<newPosition; i++ ) {
+                    aBuilding[i] = 1;
+                }
+                nLastPosition = newPosition;
+                sLOG += '<br>' + ++nCurrentTry + '). AI magician tried floor ' + newPosition + ' and the orb survived';
+            } else { // oh, snap, the orb broke... AI magician is in tears
+                aBuilding[newPosition-1] = 2;
+                sLOG += '<br>' + ++nCurrentTry + '). AI magician\'s orb <font color="red"><b>SHATTERS</b></font> falling from the floor ' + newPosition + '!';
+                ActionStage++;
+                if (newPosition == nLastPosition+1) {
+                    aBuilding[newPosition-1] = 3;
+                    sLOG += '<br><br>Since all previous floors are checked...<br>';
+                    sLOG += 'AI magician came to a conclusion that the secret floor was <font color="red"><b>' + newPosition + '</b></font>.';
+                    ActionStage++;
+                }
+            }   
+            break
+        case 2: // 1 orb left, be careful
+            nLastPosition++;
+            if (nLastPosition<CrackStage) { // orb survived
+                aBuilding[nLastPosition-1] = 1;
+                sLOG += '<br>' + ++nCurrentTry + '). AI magician tried floor ' + nLastPosition + ' and the orb survived';
+                if (nLastPosition+1 == CrackStage) {
+                    if (aBuilding[nLastPosition]==2) {
+                        sLOG += '<br><br>Since all previous floors are checked...<br>';
+                        sLOG += 'AI magician came to a conclusion that secret floor was <font color="red"><b>' + ++nLastPosition + '</b></font>.';
+                        aBuilding[nLastPosition-1] = 3;
+                        ActionStage++;
+                    }
+                }
+            } else { // the orb shatters
+                aBuilding[nLastPosition-1] = 3;
+                sLOG += '<br>' + ++nCurrentTry + '). AI magician\'s orb <font color="red"><b>SHATTERS</b></font> falling from the floor ' + nLastPosition + '!';
+                sLOG += '<br><br>Since all previous floors are checked...<br>';
+                sLOG += 'AI magician came to a conclusion that the secret floor was <font color="red"><b>' + nLastPosition + '</b></font>.';
+                ActionStage++;
+            }
+            break
+    }
+}
+
+function guess_Tries() {
+    nTries = Math.ceil((Math.sqrt(8*nStages + 1) - 1) / 2);
+}
+
+// Construct our noble building from whatever
+function Build_my_Empire_State() {
+    var sHTML = '<table border="2" bordercolor="black" style="border-collapse:collapse">';
+    for ( i=nStages; i>0; i-- ){
+        sHTML += '<tr><td id="td_' + aBuilding[i-1] + '">&nbsp;&nbsp;' + i + '&nbsp;&nbsp;</td></tr>';
+    }
+    sHTML += '</table>';
+    document.getElementById('field_Building').innerHTML = sHTML;
+    document.getElementById('field_LOG').innerHTML = sLOG;
+}
+
+// Show or hide details
+function WTF(){
+    are_Details_Shown = 1 - are_Details_Shown;
+    if (are_Details_Shown==1){
+        document.getElementById('field_WTF').innerHTML = WTF_text;
+    } else {
+        document.getElementById('field_WTF').innerHTML = '';
+    }
+}
+
+function ini_WTF_text() {
+    WTF_text = 'Rioran have AI magician. And that AI magician have BALLS. 2 orbs if to speak in quantity terms. <br><br>';
+    WTF_text += 'Both orbs are 100% equal in all it\'s properties. <br><br>';
+    WTF_text += 'You are a GOD. And you have unique power to create out of nowhere a building with any amount of stages you want. <br><br>';
+    WTF_text += 'What else is awesome about you - you can define gravity options for the orbs to crack when dropped from a specific stage. <br><br>';
+    WTF_text += 'So go provide Riorans AI magician with a building. And, since it\'s a science nerd AI magician, he will try to find out the stage of brokage in the least steps possible. <br><br>';
+    WTF_text += 'PC hints: use TAB to walk through buttons and SPACE to push \'em. <br><br>';
+    WTF_text += 'Other devices hints: no quick buttons here, suffer from your milliseconds loss.';
+}
+
+</script></head>
+<body onload='ini_WTF_text();'>
+
+<p>
+<b>2 magic orbs riddle</b><br><br>
+<button onclick='WTF();'><b>WTF is <br>going on?</b></button>
+<div id='field_WTF'></div>
+</p>
+
+<table>
+    <tr>
+        <td width="160"><p><b>Stages amount:</b><br><div id="field_Stages"><input id="input_field_nStages" type="text" size="10" value="20"></div></p></td>
+        <td width="160"><p><b>Crack stage:</b><br><div id="field_CrackStage"><input id="input_field_CrackStage" type="text" size="10" value="16"></div></p></td>
+        <td width="160"><p><button onclick='Gimme_Action();Build_my_Empire_State();'><b>Gimme action! =></b></button></p></td>
+        <td width="160"><p><button onclick='location.reload();'><b>Reset</b></button></p></td>
+    </tr>
+    <tr>
+        <td>
+            <center><font size=1><div id="field_Building"></div></font></center>
+        </td>
+        <td colspan=3 valign="top" style="text-align:left">
+            <br><br><div id="field_LOG">Get ready, AI magician! This dude will test your IQ now!</div>
+        </td>
+    </tr>
+</table>
+
+<p><div id="place_for_grid"></div></p>
+
+</body></html>
+
